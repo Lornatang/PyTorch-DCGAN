@@ -2,7 +2,7 @@
 
 This example implements the paper [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](http://arxiv.org/abs/1511.06434)
 
-The implementation is very close to the Torch implementation [dcgan.torch](https://github.com/soumith/dcgan.torch)
+The implementation is very close to the Torch implementation [dcgan.py](https://github.com/Lornatang/PyTorch-DCGAN/dcgan.py)
 
 After every 100 training iterations, the files `real_samples.png` and `fake_samples.png` are written to disk
 with the samples from the generative model.
