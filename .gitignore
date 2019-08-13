@@ -128,4 +128,4 @@ data/
 .DS_Store
 
 # model file
-.pth
+checkpoints
