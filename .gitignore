@@ -113,8 +113,19 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# My dir
+# IDE file
 .idea
-*.png
+.vscode
 
+# img data
+.png
+.jpg
+
+# train data
 data/
+
+# mac file
+.DS_Store
+
+# model file
+.pth
