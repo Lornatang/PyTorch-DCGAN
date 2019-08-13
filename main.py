@@ -36,7 +36,7 @@ from model import Discriminator
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataroot', required=True, help='path to dataset')
-parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
+parser.add_argument('--workers', type=int, help='number of data loading workers', default=8)
 parser.add_argument('--batch_size', type=int, default=256, help='inputs batch size')
 parser.add_argument('--image_size', type=int, default=96, help='the height / width of the inputs image to network')
 parser.add_argument('--nz', type=int, default=100, help='size of the latent z vector')
@@ -53,6 +53,7 @@ parser.add_argument('--netD', default='./checkpoints/netD_epoch_200.pth', help="
 parser.add_argument('--out_images', default='./imgs', help='folder to output images')
 parser.add_argument('--out_folder', default='./checkpoints', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
+parser.add_argument('--mode', type=str, default='train', help='model mode. default=`train`')
 
 opt = parser.parse_args()
 print(opt)
@@ -93,33 +94,33 @@ nz = int(opt.nz)
 ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 
-################################################
-#               load model
-################################################
-netG = Generator(ngpu).to(device)
-netG.apply(weights_init)
-if opt.netG != '':
-    torch.load(opt.netG)
-print(netG)
-
-netD = Discriminator(ngpu).to(device)
-netD.apply(weights_init)
-if opt.netD != '':
-    torch.load(opt.netD)
-print(netD)
-
-criterion = nn.BCELoss()
-
 fixed_noise = torch.randn(opt.batch_size, nz, 1, 1, device=device)
-
-# setup optimizer
-optimizerD = optim.Adam(netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
-optimizerG = optim.Adam(netG.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
 
 
 def train():
     """ train model
     """
+    ################################################
+    #               load model
+    ################################################
+    netG = Generator(ngpu).to(device)
+    netG.apply(weights_init)
+    if opt.netG != '':
+        torch.load(opt.netG)
+    print(netG)
+
+    netD = Discriminator(ngpu).to(device)
+    netD.apply(weights_init)
+    if opt.netD != '':
+        torch.load(opt.netD)
+    print(netD)
+
+    criterion = nn.BCELoss()
+
+    # setup optimizer
+    optimizerD = optim.Adam(netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
+    optimizerG = optim.Adam(netG.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
+
     for epoch in range(opt.n_epochs):
         for i, data in enumerate(dataloader):
             ############################
@@ -158,7 +159,7 @@ def train():
             errG.backward()
             D_G_z2 = output.mean().item()
             optimizerG.step()
-            print(f"Epoch->[{epoch:03d}/{opt.n_epochs:03d}] "
+            print(f"Epoch->[{epoch + 1:03d}/{opt.n_epochs:03d}] "
                   f"Progress->{i / len(dataloader) * 100:4.2f}% "
                   f"Loss_D: {errD.item():.4f} "
                   f"Loss_G: {errG.item():.4f} "
@@ -171,9 +172,26 @@ def train():
                 vutils.save_image(fake.detach(), f"{opt.out_images}/fake_samples_epoch_{epoch:03d}.png", normalize=True)
 
         # do checkpointing
-        torch.save(netG, f"{opt.out_folder}/netG_epoch_{epoch + 1:03d}.pth")
-        torch.save(netD, f"{opt.out_folder}/netD_epoch_{epoch + 1:03d}.pth")
+        torch.save(netG.state_dict(), f"{opt.out_folder}/netG_epoch_{epoch + 1:03d}.pth")
+        torch.save(netD.state_dict(), f"{opt.out_folder}/netD_epoch_{epoch + 1:03d}.pth")
+
+
+@torch.no_grad()
+def test():
+    ################################################
+    #               load model
+    ################################################
+    netG = Generator(ngpu).eval()
+    netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
+    netG.to(device)
+    fake = netG(fixed_noise)
+    vutils.save_image(fake.detach(), f"{opt.out_images}/fake.png", normalize=True)
 
 
 if __name__ == '__main__':
-    train()
+    if opt.mode == 'train':
+        train()
+    elif opt.mode == 'test':
+        test()
+    else:
+        print(opt)
