@@ -33,11 +33,12 @@ def weights_init(m):
 
 
 class Generator(nn.Module):
-    def __init__(self, opt):
+    def __init__(self, ngpu):
         super(Generator, self).__init__()
-        nz = opt.nz
-        ngf = opt.ngf
-        nc = opt.nc
+        self.ngpu = ngpu
+        nz = 100
+        ngf = 64
+        nc = 3
         self.main = nn.Sequential(
             # inputs is Z, going into a convolution
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
@@ -61,17 +62,21 @@ class Generator(nn.Module):
             # state size. (nc) x 96 x 96
         )
 
-    def forward(self, inputs, ngpu):
-        outputs = self.main(inputs)
+    def forward(self, inputs):
+        if inputs.is_cuda and self.ngpu > 1:
+            outputs = nn.parallel.data_parallel(self.main, inputs, range(self.ngpu))
+        else:
+            outputs = self.main(inputs)
         return outputs
 
 
 class Discriminator(nn.Module):
-    def __init__(self, opt):
+    def __init__(self, ngpu):
         super(Discriminator, self).__init__()
-        nz = opt.nz
-        ndf = opt.ndf
-        nc = opt.nc
+        self.ngpu = ngpu
+        nz = 100
+        ndf = 64
+        nc = 3
         self.main = nn.Sequential(
             # inputs is (nc) x 64 x 64
             nn.Conv2d(nc, ndf, 5, 3, 1, bias=False),
@@ -94,5 +99,8 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, inputs):
-        outputs = self.main(inputs)
-        return outputs.view(-1, 1).squeeze(1)
+        if inputs.is_cuda and self.ngpu > 1:
+            outputs = nn.parallel.data_parallel(self.main, inputs, range(self.ngpu))
+        else:
+            outputs = self.main(inputs)
+        return outputs
