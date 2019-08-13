@@ -48,16 +48,18 @@ parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. de
 parser.add_argument('--beta2', type=float, default=0.999, help='beta2 for adam. default=0.999')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-parser.add_argument('--netG', default='', help="path to netG (to continue training)")
-parser.add_argument('--netD', default='', help="path to netD (to continue training)")
-parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
+parser.add_argument('--netG', default='./checkpoints/netG_epoch_200.pth', help="path to netG (to continue training)")
+parser.add_argument('--netD', default='./checkpoints/netD_epoch_200.pth', help="path to netD (to continue training)")
+parser.add_argument('--out_images', default='./imgs', help='folder to output images')
+parser.add_argument('--out_folder', default='./checkpoints', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 
 opt = parser.parse_args()
 print(opt)
 
 try:
-    os.makedirs(opt.outf)
+    os.makedirs(opt.out_images)
+    os.makedirs(opt.out_folder)
 except OSError:
     pass
 
@@ -164,13 +166,13 @@ def train():
                   f"D(G(z)): {D_G_z1:.4f} / {D_G_z2:.4f}", end="\r")
 
             if i % 100 == 0:
-                vutils.save_image(real_data, f"{opt.outf}/real_samples.png", normalize=True)
+                vutils.save_image(real_data, f"{opt.out_images}/real_samples.png", normalize=True)
                 fake = netG(fixed_noise)
-                vutils.save_image(fake.detach(), f"{opt.outf}/fake_samples_epoch_{epoch:03d}.png", normalize=True)
+                vutils.save_image(fake.detach(), f"{opt.out_images}/fake_samples_epoch_{epoch:03d}.png", normalize=True)
 
         # do checkpointing
-        torch.save(netG, f"{opt.outf}/netG_epoch_{epoch:03d}")
-        torch.save(netD, f"{opt.outf}/netD_epoch_{epoch:03d}")
+        torch.save(netG, f"{opt.out_folder}/netG_epoch_{epoch:03d}.pth")
+        torch.save(netD, f"{opt.out_folder}/netD_epoch_{epoch:03d}.pth")
 
 
 if __name__ == '__main__':
