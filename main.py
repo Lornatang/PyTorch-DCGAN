@@ -158,8 +158,8 @@ def train():
             errG.backward()
             D_G_z2 = output.mean().item()
             optimizerG.step()
-            print(f"Epoch->[{epoch}/{opt.n_epochs}]"
-                  f"Progress->{i / len(dataloader) * 100:.2f}% "
+            print(f"Epoch->[{epoch:03d}/{opt.n_epochs:03d}] "
+                  f"Progress->{i / len(dataloader) * 100:4.2f}% "
                   f"Loss_D: {errD.item():.4f} "
                   f"Loss_G: {errG.item():.4f} "
                   f"D(x): {D_x:.4f} "
@@ -171,8 +171,8 @@ def train():
                 vutils.save_image(fake.detach(), f"{opt.out_images}/fake_samples_epoch_{epoch:03d}.png", normalize=True)
 
         # do checkpointing
-        torch.save(netG, f"{opt.out_folder}/netG_epoch_{epoch:03d}.pth")
-        torch.save(netD, f"{opt.out_folder}/netD_epoch_{epoch:03d}.pth")
+        torch.save(netG, f"{opt.out_folder}/netG_epoch_{epoch + 1:03d}.pth")
+        torch.save(netD, f"{opt.out_folder}/netD_epoch_{epoch + 1:03d}.pth")
 
 
 if __name__ == '__main__':
