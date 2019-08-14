@@ -53,7 +53,7 @@ parser.add_argument('--netD', default='./checkpoints/netD_epoch_200.pth', help="
 parser.add_argument('--out_images', default='./imgs', help='folder to output images')
 parser.add_argument('--out_folder', default='./checkpoints', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
-parser.add_argument('--mode', type=str, default='train', help='model mode. default=`train`')
+parser.add_argument('--phase', type=str, default='train', help='model mode. default=`train`')
 
 opt = parser.parse_args()
 print(opt)
@@ -75,18 +75,6 @@ cudnn.benchmark = True
 if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-dataset = dset.ImageFolder(root=opt.dataroot,
-                           transform=transforms.Compose([
-                               transforms.Resize(opt.image_size),
-                               transforms.CenterCrop(opt.image_size),
-                               transforms.ToTensor(),
-                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                           ]))
-
-assert dataset
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size,
-                                         shuffle=True, num_workers=int(opt.workers))
-
 device = torch.device("cuda:0" if opt.cuda else "cpu")
 
 ngpu = int(opt.ngpu)
@@ -101,16 +89,31 @@ def train():
     """ train model
     """
     ################################################
+    #               load train dataset
+    ################################################
+    dataset = dset.ImageFolder(root=opt.dataroot,
+                               transform=transforms.Compose([
+                                   transforms.Resize(opt.image_size),
+                                   transforms.CenterCrop(opt.image_size),
+                                   transforms.ToTensor(),
+                                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                               ]))
+
+    assert dataset
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size,
+                                             shuffle=True, num_workers=int(opt.workers))
+
+    ################################################
     #               load model
     ################################################
     netG = Generator(ngpu).to(device)
-    Generator.apply(weights_init)
+    netG.apply(weights_init)
     if opt.netG != '':
         netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
     print(netG)
 
     netD = Discriminator(ngpu).to(device)
-    Discriminator.apply(weights_init)
+    netD.apply(weights_init)
     if opt.netD != '':
         netD.load_state_dict(torch.load(opt.netD, map_location=lambda storage, loc: storage))
     print(netD)
@@ -204,16 +207,16 @@ def test():
     netG.apply(weights_init)
     netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
     print(f"Load model successful!")
-
+    one_noise = torch.randn(1, nz, 1, 1, device=device)
     with torch.no_grad():
-        fake = netG(fixed_noise).detach().cpu()
+        fake = netG(one_noise).detach().cpu()
     vutils.save_image(fake, f"{opt.out_images}/fake.png", normalize=True)
 
 
 if __name__ == '__main__':
-    if opt.mode == 'train':
+    if opt.phase == 'train':
         train()
-    elif opt.mode == 'test':
+    elif opt.phase == 'test':
         test()
     else:
         print(opt)
