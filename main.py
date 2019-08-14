@@ -115,17 +115,35 @@ def train():
         torch.load(opt.netD)
     print(netD)
 
+    ################################################
+    #           Binary Cross Entropy
+    ################################################
     criterion = nn.BCELoss()
 
-    # setup optimizer
+    ################################################
+    #            Use Adam optimizer
+    ################################################
     optimizerD = optim.Adam(netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
     optimizerG = optim.Adam(netG.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
 
+    ################################################
+    #               print args
+    ################################################
+    print("########################################\n")
+    print(f"train dataset path: {opt.dataroot}\n")
+    print(f"work thread: {opt.workers}\n")
+    print(f"batch size: {opt.batch_size}\n")
+    print(f"image size: {opt.image_size}\n")
+    print(f"Epochs: {opt.n_epochs}\n")
+    print(f"Noise size: {opt.nz}\n")
+    print("########################################\n")
+    print(f"loading pretrain model successful!\n")
+    print("Starting trainning!\n\n")
     for epoch in range(opt.n_epochs):
         for i, data in enumerate(dataloader):
-            ############################
+            ##############################################
             # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
-            ###########################
+            ##############################################
             # train with real
             netD.zero_grad()
             real_data = data[0].to(device)
@@ -150,9 +168,9 @@ def train():
             errD = errD_real + errD_fake
             optimizerD.step()
 
-            ############################
+            ##############################################
             # (2) Update G network: maximize log(D(G(z)))
-            ###########################
+            ##############################################
             netG.zero_grad()
             output = netD(fake)
             errG = criterion(output, real_label)
@@ -181,9 +199,12 @@ def test():
     ################################################
     #               load model
     ################################################
+    print(f"Load model...\n")
     netG = Generator(ngpu).eval()
     netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
     netG.to(device)
+    print(f"Load model successful!\n")
+
     fake = netG(fixed_noise)
     vutils.save_image(fake.detach(), f"{opt.out_images}/fake.png", normalize=True)
 
