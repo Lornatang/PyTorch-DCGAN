@@ -35,7 +35,7 @@ from model import Generator
 from model import Discriminator
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataroot', type=True, default='./dataset', help='path to dataset')
+parser.add_argument('--dataroot', type=str, default='./dataset', help='path to dataset')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=8)
 parser.add_argument('--batch_size', type=int, default=256, help='inputs batch size')
 parser.add_argument('--image_size', type=int, default=96, help='the height / width of the inputs image to network')
@@ -48,8 +48,8 @@ parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. de
 parser.add_argument('--beta2', type=float, default=0.999, help='beta2 for adam. default=0.999')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-parser.add_argument('--netG', default='./checkpoints/netg_200.pth', help="path to netG (to continue training)")
-parser.add_argument('--netD', default='./checkpoints/netd_200.pth', help="path to netD (to continue training)")
+parser.add_argument('--netG', default='./checkpoints/netG_epoch_200.pth', help="path to netG (to continue training)")
+parser.add_argument('--netD', default='./checkpoints/netD_epoch_200.pth', help="path to netD (to continue training)")
 parser.add_argument('--out_images', default='./imgs', help='folder to output images')
 parser.add_argument('--out_folder', default='./checkpoints', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
@@ -104,15 +104,15 @@ def train():
     #               load model
     ################################################
     netG = Generator(ngpu).to(device)
-    netG.apply(weights_init)
+    Generator.apply(weights_init)
     if opt.netG != '':
-        torch.load(opt.netG)
+        netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
     print(netG)
 
     netD = Discriminator(ngpu).to(device)
-    netD.apply(weights_init)
+    Discriminator.apply(weights_init)
     if opt.netD != '':
-        torch.load(opt.netD)
+        netD.load_state_dict(torch.load(opt.netD, map_location=lambda storage, loc: storage))
     print(netD)
 
     ################################################
@@ -153,7 +153,7 @@ def train():
             real_label = torch.full((batch_size,), 1, device=device)
             fake_label = torch.full((batch_size,), 0, device=device)
 
-            output = netD(real_data)
+            output = netD(real_data).view(-1)
             errD_real = criterion(output, real_label)
             errD_real.backward()
             D_x = output.mean().item()
@@ -161,7 +161,7 @@ def train():
             # train with fake
             noise = torch.randn(batch_size, nz, 1, 1, device=device)
             fake = netG(noise)
-            output = netD(fake.detach())
+            output = netD(fake.detach()).view(-1)
             errD_fake = criterion(output, fake_label)
             errD_fake.backward()
             D_G_z1 = output.mean().item()
@@ -172,7 +172,7 @@ def train():
             # (2) Update G network: maximize log(D(G(z)))
             ##############################################
             netG.zero_grad()
-            output = netD(fake)
+            output = netD(fake).view(-1)
             errG = criterion(output, real_label)
             errG.backward()
             D_G_z2 = output.mean().item()
@@ -186,27 +186,28 @@ def train():
 
             if i % 100 == 0:
                 vutils.save_image(real_data, f"{opt.out_images}/real_samples.png", normalize=True)
-                fake = netG(fixed_noise)
-                vutils.save_image(fake.detach(), f"{opt.out_images}/fake_samples_epoch_{epoch+1:03d}.png", normalize=True)
+                with torch.no_grad():
+                    fake = netG(fixed_noise).detach().cpu()
+                vutils.save_image(fake, f"{opt.out_images}/fake_samples_epoch_{epoch+1:03d}.png", normalize=True)
 
         # do checkpointing
         torch.save(netG.state_dict(), f"{opt.out_folder}/netG_epoch_{epoch + 1:03d}.pth")
         torch.save(netD.state_dict(), f"{opt.out_folder}/netD_epoch_{epoch + 1:03d}.pth")
 
 
-@torch.no_grad()
 def test():
     ################################################
     #               load model
     ################################################
     print(f"Load model...\n")
-    netG = Generator(ngpu).eval()
+    netG = Generator(ngpu).to(device)
+    netG.apply(weights_init)
     netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
-    netG.to(device)
     print(f"Load model successful!")
 
-    fake = netG(fixed_noise)
-    vutils.save_image(fake.detach(), f"{opt.out_images}/fake.png", normalize=True)
+    with torch.no_grad():
+        fake = netG(fixed_noise).detach().cpu()
+    vutils.save_image(fake, f"{opt.out_images}/fake.png", normalize=True)
 
 
 if __name__ == '__main__':
