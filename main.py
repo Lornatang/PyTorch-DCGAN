@@ -35,7 +35,7 @@ from model import Generator
 from model import Discriminator
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataroot', required=True, help='path to dataset')
+parser.add_argument('--dataroot', type=True, default='./dataset', help='path to dataset')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=8)
 parser.add_argument('--batch_size', type=int, default=256, help='inputs batch size')
 parser.add_argument('--image_size', type=int, default=96, help='the height / width of the inputs image to network')
@@ -48,8 +48,8 @@ parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. de
 parser.add_argument('--beta2', type=float, default=0.999, help='beta2 for adam. default=0.999')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-parser.add_argument('--netG', default='./checkpoints/netG_epoch_200.pth', help="path to netG (to continue training)")
-parser.add_argument('--netD', default='./checkpoints/netD_epoch_200.pth', help="path to netD (to continue training)")
+parser.add_argument('--netG', default='./checkpoints/netg_200.pth', help="path to netG (to continue training)")
+parser.add_argument('--netD', default='./checkpoints/netd_200.pth', help="path to netD (to continue training)")
 parser.add_argument('--out_images', default='./imgs', help='folder to output images')
 parser.add_argument('--out_folder', default='./checkpoints', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
@@ -129,16 +129,16 @@ def train():
     ################################################
     #               print args
     ################################################
-    print("########################################\n")
-    print(f"train dataset path: {opt.dataroot}\n")
-    print(f"work thread: {opt.workers}\n")
-    print(f"batch size: {opt.batch_size}\n")
-    print(f"image size: {opt.image_size}\n")
-    print(f"Epochs: {opt.n_epochs}\n")
-    print(f"Noise size: {opt.nz}\n")
-    print("########################################\n")
+    print("########################################")
+    print(f"train dataset path: {opt.dataroot}")
+    print(f"work thread: {opt.workers}")
+    print(f"batch size: {opt.batch_size}")
+    print(f"image size: {opt.image_size}")
+    print(f"Epochs: {opt.n_epochs}")
+    print(f"Noise size: {opt.nz}")
+    print("########################################")
     print(f"loading pretrain model successful!\n")
-    print("Starting trainning!\n\n")
+    print("Starting trainning!")
     for epoch in range(opt.n_epochs):
         for i, data in enumerate(dataloader):
             ##############################################
@@ -187,7 +187,7 @@ def train():
             if i % 100 == 0:
                 vutils.save_image(real_data, f"{opt.out_images}/real_samples.png", normalize=True)
                 fake = netG(fixed_noise)
-                vutils.save_image(fake.detach(), f"{opt.out_images}/fake_samples_epoch_{epoch:03d}.png", normalize=True)
+                vutils.save_image(fake.detach(), f"{opt.out_images}/fake_samples_epoch_{epoch+1:03d}.png", normalize=True)
 
         # do checkpointing
         torch.save(netG.state_dict(), f"{opt.out_folder}/netG_epoch_{epoch + 1:03d}.pth")
@@ -203,7 +203,7 @@ def test():
     netG = Generator(ngpu).eval()
     netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
     netG.to(device)
-    print(f"Load model successful!\n")
+    print(f"Load model successful!")
 
     fake = netG(fixed_noise)
     vutils.save_image(fake.detach(), f"{opt.out_images}/fake.png", normalize=True)
