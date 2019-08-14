@@ -22,6 +22,12 @@ to tell real images apart from fakes.
 import torch.nn as nn
 
 
+nz = 100
+ngf = 64
+ndf = 64
+nc = 3
+
+
 # custom weights initialization called on netG and netD
 def weights_init(m):
     classname = m.__class__.__name__
@@ -36,9 +42,7 @@ class Generator(nn.Module):
     def __init__(self, ngpu):
         super(Generator, self).__init__()
         self.ngpu = ngpu
-        nz = 100
-        ngf = 64
-        nc = 3
+
         self.main = nn.Sequential(
             # inputs is Z, going into a convolution
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
@@ -74,9 +78,7 @@ class Discriminator(nn.Module):
     def __init__(self, ngpu):
         super(Discriminator, self).__init__()
         self.ngpu = ngpu
-        nz = 100
-        ndf = 64
-        nc = 3
+
         self.main = nn.Sequential(
             # inputs is (nc) x 64 x 64
             nn.Conv2d(nc, ndf, 5, 3, 1, bias=False),
