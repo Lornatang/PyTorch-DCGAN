@@ -191,7 +191,7 @@ def train():
                 vutils.save_image(real_data, f"{opt.out_images}/real_samples.png", normalize=True)
                 with torch.no_grad():
                     fake = netG(fixed_noise).detach().cpu()
-                vutils.save_image(fake, f"{opt.out_images}/fake_samples_epoch_{epoch+1:03d}.png", normalize=True)
+                vutils.save_image(fake, f"{opt.out_images}/fake_samples_epoch_{epoch + 1:03d}.png", normalize=True)
 
         # do checkpointing
         torch.save(netG.state_dict(), f"{opt.out_folder}/netG_epoch_{epoch + 1:03d}.pth")

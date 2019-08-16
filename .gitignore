@@ -126,6 +126,3 @@ data/
 
 # mac file
 .DS_Store
-
-# model file
-checkpoints/
