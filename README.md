@@ -81,8 +81,8 @@ python main.py --mode test --out_images ./result
 
 - epoch 100
 
-![epoch100.png](https://github.com/Lornatang/PyTorch-DCGAN/tree/master/assets/epoch100.png)
+![epoch100.png](https://github.com/Lornatang/PyTorch-DCGAN/blob/master/assets/epoch100.png)
 
 - epoch 200
 
-![epoch200.png](https://github.com/Lornatang/PyTorch-DCGAN/tree/master/assets/epoch200.png)
+![epoch200.png](https://github.com/Lornatang/PyTorch-DCGAN/blob/master/assets/epoch200.png)
