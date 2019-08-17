@@ -198,7 +198,7 @@ def train():
         torch.save(netD.state_dict(), f"{opt.out_folder}/netD_epoch_{epoch + 1:03d}.pth")
 
 
-def test():
+def generate():
     ################################################
     #               load model
     ################################################
@@ -216,7 +216,7 @@ def test():
 if __name__ == '__main__':
     if opt.phase == 'train':
         train()
-    elif opt.phase == 'test':
-        test()
+    elif opt.phase == 'generate':
+        generate()
     else:
         print(opt)
