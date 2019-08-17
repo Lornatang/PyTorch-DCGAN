@@ -56,7 +56,6 @@ parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument('--phase', type=str, default='train', help='model mode. default=`train`')
 
 opt = parser.parse_args()
-print(opt)
 
 try:
     os.makedirs(opt.out_images)
@@ -66,7 +65,6 @@ except OSError:
 
 if opt.manualSeed is None:
     opt.manualSeed = random.randint(1, 10000)
-print("Random Seed: ", opt.manualSeed)
 random.seed(opt.manualSeed)
 torch.manual_seed(opt.manualSeed)
 
