@@ -4,7 +4,7 @@
 
 This example implements the paper [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](http://arxiv.org/abs/1511.06434)
 
-The implementation is very close to the Torch implementation [dcgan.py](https://github.com/Lornatang/PyTorch-DCGAN/dcgan.py)
+The implementation is very close to the Torch implementation [main.py](https://github.com/Lornatang/PyTorch-DCGAN/main.py)
 
 After every 100 training iterations, the files `real_samples.png` and `fake_samples.png` are written to disk
 with the samples from the generative model.
@@ -13,7 +13,7 @@ After every epoch, models are saved to: `netG_epoch_%d.pth` and `netD_epoch_%d.p
 
 #### Configure
 
-- [PyTorch](https://pytorch.org) > 1.0
+- [PyTorch](https://pytorch.org) > 1.3.0
 - GTX 1080 Ti
 
 ### Load dataset
@@ -51,7 +51,7 @@ click it **[netg_200.pth](http://pytorch-1252820389.cosbj.myqcloud.com/netg_200.
 if you want pretrain discriminate model, 
 click it **[netd_200.pth](http://pytorch-1252820389.cosbj.myqcloud.com/netd_200.pth)**
 
-please rename model name. `netd_200.pth` -> `netD_epoch_200.pth` and `netg_200.pth` -> `netG_epoch_200.pth`
+please rename model name. `netd_200.pth` -> `D.pth` and `netg_200.pth` -> `G.pth`
 
 start run:
 ```text
