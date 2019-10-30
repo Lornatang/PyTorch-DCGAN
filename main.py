@@ -36,20 +36,13 @@ from model import Discriminator
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataroot', type=str, default='./dataset', help='path to dataset')
-parser.add_argument('--workers', type=int, help='number of data loading workers', default=8)
-parser.add_argument('--batch_size', type=int, default=256, help='inputs batch size')
-parser.add_argument('--image_size', type=int, default=96, help='the height / width of the inputs image to network')
-parser.add_argument('--nz', type=int, default=100, help='size of the latent z vector')
-parser.add_argument('--ngf', type=int, default=64)
-parser.add_argument('--ndf', type=int, default=64)
-parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs to train for')
+parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--lr', type=float, default=0.0002, help='learning rate, default=0.0002')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument('--beta2', type=float, default=0.999, help='beta2 for adam. default=0.999')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
-parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-parser.add_argument('--netG', default='./checkpoints/netG_epoch_200.pth', help="path to netG (to continue training)")
-parser.add_argument('--netD', default='./checkpoints/netD_epoch_200.pth', help="path to netD (to continue training)")
+parser.add_argument('--netG', default='./checkpoints/G.pth', help="path to netG (to continue training)")
+parser.add_argument('--netD', default='./checkpoints/D.pth', help="path to netD (to continue training)")
 parser.add_argument('--out_images', default='./imgs', help='folder to output images')
 parser.add_argument('--out_folder', default='./checkpoints', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
@@ -75,12 +68,7 @@ if torch.cuda.is_available() and not opt.cuda:
 
 device = torch.device("cuda:0" if opt.cuda else "cpu")
 
-ngpu = int(opt.ngpu)
-nz = int(opt.nz)
-ngf = int(opt.ngf)
-ndf = int(opt.ndf)
-
-fixed_noise = torch.randn(opt.batch_size, nz, 1, 1, device=device)
+fixed_noise = torch.randn(64, 100, 1, 1, device=device)
 
 
 def train():
@@ -91,35 +79,43 @@ def train():
     ################################################
     dataset = dset.ImageFolder(root=opt.dataroot,
                                transform=transforms.Compose([
-                                   transforms.Resize(opt.image_size),
-                                   transforms.CenterCrop(opt.image_size),
+                                   transforms.Resize(96),
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
 
     assert dataset
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size,
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
                                              shuffle=True, num_workers=int(opt.workers))
 
     ################################################
     #               load model
     ################################################
-    netG = Generator(ngpu).to(device)
-    netG.apply(weights_init)
-    if opt.netG != '':
-        netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
-    print(netG)
+    if torch.cuda.device_count() > 1:
+      netG = torch.nn.DataParallel(Generator())
+    else:
+      netG = Generator()
+    if os.path.exists("./checkpoints/G.pth"):
+      netG.load_state_dict(torch.load("./checkpoints/G.pth", map_location=lambda storage, loc: storage))
 
-    netD = Discriminator(ngpu).to(device)
-    netD.apply(weights_init)
-    if opt.netD != '':
-        netD.load_state_dict(torch.load(opt.netD, map_location=lambda storage, loc: storage))
+    if torch.cuda.device_count() > 1:
+      netD = torch.nn.DataParallel(Discriminator())
+    else:
+      netD = Discriminator()
+    if os.path.exists("./checkpoints/D.pth"):
+      netD.load_state_dict(torch.load("./checkpoints/D.pth", map_location=lambda storage, loc: storage))
+
+    netG.train()
+    netG.to(device)
+    netD.train()
+    netD.to(device)
+    print(netG)
     print(netD)
 
     ################################################
     #           Binary Cross Entropy
     ################################################
-    criterion = nn.BCELoss()
+    criterion = nn.BCEWithLogitsLoss()
 
     ################################################
     #            Use Adam optimizer
@@ -133,14 +129,14 @@ def train():
     print("########################################")
     print(f"train dataset path: {opt.dataroot}")
     print(f"work thread: {opt.workers}")
-    print(f"batch size: {opt.batch_size}")
-    print(f"image size: {opt.image_size}")
-    print(f"Epochs: {opt.n_epochs}")
-    print(f"Noise size: {opt.nz}")
+    print(f"batch size: 64")
+    print(f"image size: 96")
+    print(f"Epochs: 200")
+    print(f"Noise size: 100")
     print("########################################")
     print(f"loading pretrain model successful!\n")
     print("Starting trainning!")
-    for epoch in range(opt.n_epochs):
+    for epoch in range(200):
         for i, data in enumerate(dataloader):
             ##############################################
             # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
@@ -178,12 +174,12 @@ def train():
             errG.backward()
             D_G_z2 = output.mean().item()
             optimizerG.step()
-            print(f"Epoch->[{epoch + 1:03d}/{opt.n_epochs:03d}] "
+            print(f"Epoch->[{epoch + 1:3d}/200] "
                   f"Progress->{i / len(dataloader) * 100:4.2f}% "
                   f"Loss_D: {errD.item():.4f} "
                   f"Loss_G: {errG.item():.4f} "
                   f"D(x): {D_x:.4f} "
-                  f"D(G(z)): {D_G_z1:.4f} / {D_G_z2:.4f}", end="\r")
+                  f"D(G(z)): {D_G_z1:.4f} / {D_G_z2:.4f}")
 
             if i % 100 == 0:
                 vutils.save_image(real_data, f"{opt.out_images}/real_samples.png", normalize=True)
@@ -192,23 +188,32 @@ def train():
                 vutils.save_image(fake, f"{opt.out_images}/fake_samples_epoch_{epoch + 1:03d}.png", normalize=True)
 
         # do checkpointing
-        torch.save(netG.state_dict(), f"{opt.out_folder}/netG_epoch_{epoch + 1:03d}.pth")
-        torch.save(netD.state_dict(), f"{opt.out_folder}/netD_epoch_{epoch + 1:03d}.pth")
+        torch.save(netG.state_dict(), f"{opt.out_folder}/G.pth")
+        torch.save(netD.state_dict(), f"{opt.out_folder}/D.pth")
 
 
 def generate():
-    ################################################
-    #               load model
-    ################################################
-    print(f"Load model...\n")
-    netG = Generator(ngpu).to(device)
-    netG.apply(weights_init)
-    netG.load_state_dict(torch.load(opt.netG, map_location=lambda storage, loc: storage))
-    print(f"Load model successful!")
-    one_noise = torch.randn(1, nz, 1, 1, device=device)
-    with torch.no_grad():
-        fake = netG(one_noise).detach().cpu()
-    vutils.save_image(fake, f"{opt.out_images}/fake.png", normalize=True)
+  """ random generate fake image.
+  """
+  ################################################
+  #               load model
+  ################################################
+  print(f"Load model...\n")
+  if torch.cuda.device_count() > 1:
+    netG = torch.nn.DataParallel(Generator())
+  else:
+    netG = Generator()
+  netG.to(device)
+  netG.load_state_dict(torch.load("./checkpoints/G.pth", map_location=lambda storage, loc: storage))
+  netG.eval()
+  print(f"Load model successful!")
+  with torch.no_grad():
+    for i in range(64):
+      z = torch.randn(1, 100, 1, 1, device=device)
+      fake = netG(z).detach().cpu()
+      vutils.save_image(fake, f"unknown/fake_{i + 1:04d}.png", normalize=True)
+  print("Images have been generated!")
+
 
 
 if __name__ == '__main__':
