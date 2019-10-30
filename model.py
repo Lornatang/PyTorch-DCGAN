@@ -104,7 +104,6 @@ class Discriminator(nn.Module):
       Returns:
         forwarded data.
       """
-      inputs = inputs.view(inputs.size(0), -1)
       if torch.cuda.is_available():
         outputs = nn.parallel.data_parallel(self.main, inputs)
       else:
