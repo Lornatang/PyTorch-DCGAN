@@ -1,5 +1,7 @@
 ## Deep Convolution Generative Adversarial Networks
 
+PyTorch-DCGAN has been deprecated. Please see [DCGAN-PyTorch](https://github.com/Lornatang/DCGAN-PyTorch), which includes implementations for all models in DCGAN.
+
 ### Introduction
 
 This example implements the paper [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](http://arxiv.org/abs/1511.06434)
